@@ -1,0 +1,76 @@
+var replace  = require('replace-method')
+var resolve  = require('glsl-resolve')
+var evaluate = require('static-eval')
+var qs       = require('querystring')
+var esprima  = require('esprima')
+var through  = require('through')
+var request  = require('request')
+var sleuth   = require('sleuth')
+var path     = require('path')
+var port     = parseInt(process.env.PORT || 12874)
+
+module.exports = transform
+
+function transform(file, opts) {
+  var dirname = path.dirname(file)
+  var buffer = []
+
+  return through(function write(data) {
+    buffer.push(data)
+  }, function flush() {
+    buffer = buffer.join('\n')
+
+    var ast = esprima.parse(buffer)
+    var src = replace(ast)
+
+    var required = sleuth(ast)
+    var varname  = Object.keys(required).filter(function(key) {
+      return required[key] === 'glslify'
+    }).pop()
+
+    if (!varname) {
+      this.queue(buffer)
+      this.queue(null)
+      return
+    }
+
+    src.replace([ varname ], function(node) {
+      var dest = path.relative(dirname, __dirname + '/client.js')
+      var data = evaluate(node.arguments[0])
+      var vertFile = data.vertex || data.vert
+      var fragFile = data.fragment || data.frag
+
+      vertFile = vertFile && resolve.sync(vertFile, { basedir: dirname })
+      fragFile = fragFile && resolve.sync(fragFile, { basedir: dirname })
+
+      if (vertFile) announce(vertFile)
+      if (fragFile) announce(fragFile)
+
+      return {
+          type: 'CallExpression'
+        , callee: {
+            type: 'CallExpression'
+          , callee: { type: 'Identifier', name: 'require' }
+          , arguments: [{
+              type: 'Literal'
+            , value: dest
+          }]
+        }
+        , arguments: [
+            node
+          , { type: 'Literal', value: vertFile }
+          , { type: 'Literal', value: fragFile }
+        ]
+      }
+    })
+
+    this.queue(src.code())
+    this.queue(null)
+  })
+}
+
+function announce(file) {
+  return request.get('http://localhost:'+port+'/submit?' + qs.stringify({
+    file: file
+  }))
+}
