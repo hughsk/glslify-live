@@ -35,7 +35,7 @@ function transform(file, opts) {
     }
 
     src.replace([ varname ], function(node) {
-      var dest = path.relative(dirname, __dirname + '/client.js')
+      var dest = './' + path.relative(dirname, __dirname + '/client.js')
       var data = evaluate(node.arguments[0])
       var vertFile = data.vertex || data.vert
       var fragFile = data.fragment || data.frag
