@@ -5,13 +5,14 @@ var deparser = require('glsl-deparser')
 var qs       = require('querystring')
 var sse      = require('sse-stream')
 var chokidar = require('chokidar')
+var once     = require('once')
 var http     = require('http')
 var path     = require('path')
 var url      = require('url')
 var bl       = require('bl')
 var fs       = require('fs')
 
-var port = parseInt(process.env.PORT || 12874)
+var port = parseInt(process.env.GLSLIFY_LIVE_PORT || 12874)
 
 module.exports = createServer
 
@@ -39,7 +40,9 @@ function createServer() {
 
   watcher.on('change', function(name) {
     makeShader(name, function(err, data) {
-      if (err) throw err
+      if (err) {
+        return console.error(err.stack)
+      }
 
       for (var i = 0; i < connections.length; i++) {
         connections[i].write(JSON.stringify({
@@ -92,7 +95,12 @@ function createServer() {
 }
 
 function makeShader(file, done) {
+  done = once(done)
+
   glslify(file)
+    .on('error', done)
     .pipe(deparser())
+    .on('error', done)
     .pipe(bl(done))
+    .on('error', done)
 }

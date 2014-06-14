@@ -7,7 +7,7 @@ var through  = require('through')
 var request  = require('request')
 var sleuth   = require('sleuth')
 var path     = require('path')
-var port     = parseInt(process.env.PORT || 12874)
+var port     = parseInt(process.env.GLSLIFY_LIVE_PORT || 12874)
 
 module.exports = transform
 
@@ -19,6 +19,12 @@ function transform(file, opts) {
     buffer.push(data)
   }, function flush() {
     buffer = buffer.join('\n')
+
+    if (buffer.indexOf('glslify') === -1) {
+      this.queue(buffer)
+      this.queue(null)
+      return
+    }
 
     var ast = esprima.parse(buffer)
     var src = replace(ast)

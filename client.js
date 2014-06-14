@@ -2,7 +2,7 @@ var update = require('gl-shader-update')
 var sse    = require('sse-stream')
 var xhr    = require('xhr')
 var events = require('./')
-var port   = parseInt(process.env.PORT || 12874)
+var port   = parseInt(process.env.GLSLIFY_LIVE_PORT || 12874)
 
 var watcher = sse('http://localhost:'+port+'/changes')
 
