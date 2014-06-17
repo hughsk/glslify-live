@@ -46,6 +46,8 @@ function transform(file, opts) {
       var vertFile = data.vertex || data.vert
       var fragFile = data.fragment || data.frag
 
+      if (data.inline) return
+
       vertFile = vertFile && resolve.sync(vertFile, { basedir: dirname })
       fragFile = fragFile && resolve.sync(fragFile, { basedir: dirname })
 
