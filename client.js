@@ -1,6 +1,5 @@
 var update = require('gl-shader-update')
 var sse    = require('sse-stream')
-var xhr    = require('xhr')
 var events = require('./')
 var port   = parseInt(process.env.GLSLIFY_LIVE_PORT || 12874)
 
@@ -8,7 +7,9 @@ var watcher = sse('http://localhost:'+port+'/changes')
 
 watcher.setMaxListeners(10000)
 
-module.exports = function(createShader, vertFile, fragFile) {
+module.exports = function(id, createShader, shaderInfo) {
+  shaderInfo = JSON.stringify(shaderInfo)
+
   return function(gl) {
     var shader = createShader(gl)
     var dispose = shader.dispose
@@ -21,17 +22,11 @@ module.exports = function(createShader, vertFile, fragFile) {
     function respond(data) {
       data = JSON.parse(data)
 
-      if (data.name === vertFile) {
-        update.vert(shader, data.data)
-        events.emit('update', vertFile, shader)
-        events.emit('update-vert', vertFile, shader)
-      }
+      if (data._id !== id) return
 
-      if (data.name === fragFile) {
-        update.frag(shader, data.data)
-        events.emit('update', fragFile, shader)
-        events.emit('update-frag', fragFile, shader)
-      }
+      update.vert(shader, data.vert)
+      update.frag(shader, data.frag)
+      events.emit('update', shader, id)
     }
 
     function cleanup() {

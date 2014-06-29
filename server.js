@@ -1,7 +1,4 @@
-// TODO: support glslify transform streams.
-
-var glslify  = require('glslify-stream')
-var deparser = require('glsl-deparser')
+var bundle   = require('glslify-bundle')
 var qs       = require('querystring')
 var sse      = require('sse-stream')
 var chokidar = require('chokidar')
@@ -9,8 +6,6 @@ var once     = require('once')
 var http     = require('http')
 var path     = require('path')
 var url      = require('url')
-var bl       = require('bl')
-var fs       = require('fs')
 
 var port = parseInt(process.env.GLSLIFY_LIVE_PORT || 12874)
 
@@ -28,7 +23,9 @@ function createServer() {
   var watcher = chokidar.watch([])
   var ping = sse('/changes')
   var connections = []
+  var shaders = {}
   var files = []
+  var ids = {}
 
   ping.on('connection', function(client) {
     connections.push(client)
@@ -39,18 +36,27 @@ function createServer() {
   }).install(server)
 
   watcher.on('change', function(name) {
-    makeShader(name, function(err, data) {
-      if (err) {
-        return console.error(err.stack)
-      }
+    var send = ids[name]
+    if (!send) return
 
-      for (var i = 0; i < connections.length; i++) {
-        connections[i].write(JSON.stringify({
-            name: name
-          , data: data.toString()
-        }))
-      }
-    })
+    for (var i = 0; i < send.length; i++) (function(data, id) {
+      if (!data) return
+
+      bundle(data.cwd, data.info, function(err, results) {
+        if (err) return console.error([err.message, err.stack].join('\n'))
+
+        addFiles(id, results.files)
+        var data = JSON.stringify({
+            _id: id
+          , vert: results.vert
+          , frag: results.frag
+        })
+
+        for (var i = 0; i < connections.length; i++) {
+          connections[i].write(data)
+        }
+      })
+    })(shaders[send[i]], send[i])
   })
 
   // Force Access-Control-Allow-Origin everywhere,
@@ -72,15 +78,56 @@ function createServer() {
 
     var query = qs.parse(url.parse(uri).query)
     var split = req.url.split(/\/+/g).slice(1)
-    if (split[0] !== 'submit') return bail('Invalid URL', req, res)
-    if (!query.file) return bail('Missing filename', req, res)
 
-    if (files.indexOf(query.file) === -1) {
-      files.push(query.file)
-      watcher.add(query.file)
-    }
+    if (!query.data) return bail('Missing data', req, res)
+    if (submit(req, res, query, split)) return
+
+    return bail('Invalid URL', req, res)
+  }
+
+  function submit(req, res, query, split) {
+    if (split[0] !== 'submit') return false
+
+    var data = JSON.parse(query.data)
+    var id = data._id
+    var cd = data._cd
+    delete data._id
+    delete data._cd
+
+    shaders[id] = { info: data, cwd: cd }
+
+    bundle(cd, data, function(err, result) {
+      if (err) return bail(err, req, res)
+      var rfiles = result.files
+
+      if (!data.inline) {
+        rfiles.push(data.vert || data.vertex)
+        rfiles.push(data.frag || data.fragment)
+      }
+
+      addFiles(id, rfiles)
+    })
 
     res.end()
+    return true
+  }
+
+  function addFiles(id, rfiles) {
+    rfiles = Array.isArray(rfiles) ? rfiles : [rfiles]
+
+    for (var i = 0; i < rfiles.length; i++) {
+      var rfile = rfiles[i]
+
+      ids[rfile] = ids[rfile] || []
+      if (ids[rfile].indexOf(id) === -1) {
+        ids[rfile].push(id)
+      }
+
+      if (files.indexOf(rfile) === -1) {
+        files.push(rfile)
+        watcher.add(rfile)
+      }
+    }
   }
 
   function bail(err, req, res) {
@@ -92,15 +139,4 @@ function createServer() {
     res.end(message)
     console.error(message)
   }
-}
-
-function makeShader(file, done) {
-  done = once(done)
-
-  glslify(file)
-    .on('error', done)
-    .pipe(deparser())
-    .on('error', done)
-    .pipe(bl(done))
-    .on('error', done)
 }

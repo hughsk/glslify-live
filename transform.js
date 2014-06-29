@@ -2,6 +2,7 @@ var replace  = require('replace-method')
 var resolve  = require('glsl-resolve')
 var evaluate = require('static-eval')
 var qs       = require('querystring')
+var uuid     = require('uuid').v4
 var esprima  = require('esprima')
 var through  = require('through')
 var request  = require('request')
@@ -46,13 +47,15 @@ function transform(file, opts) {
       var vertFile = data.vertex || data.vert
       var fragFile = data.fragment || data.frag
 
-      if (data.inline) return
+      var cd = data._cd = path.dirname(file)
+      var id = data._id = uuid()
 
-      vertFile = vertFile && resolve.sync(vertFile, { basedir: dirname })
-      fragFile = fragFile && resolve.sync(fragFile, { basedir: dirname })
+      if (!data.inline) {
+        vertFile = data.vert = vertFile && resolve.sync(vertFile, { basedir: dirname })
+        fragFile = data.frag = fragFile && resolve.sync(fragFile, { basedir: dirname })
+      }
 
-      if (vertFile) announce(vertFile)
-      if (fragFile) announce(fragFile)
+      announce(data)
 
       return {
           type: 'CallExpression'
@@ -64,11 +67,10 @@ function transform(file, opts) {
             , value: dest
           }]
         }
-        , arguments: [
-            node
-          , { type: 'Literal', value: vertFile }
-          , { type: 'Literal', value: fragFile }
-        ]
+        , arguments: [{
+            type: 'Literal'
+          , value: id
+        }, node]
       }
     })
 
@@ -77,8 +79,8 @@ function transform(file, opts) {
   })
 }
 
-function announce(file) {
+function announce(data) {
   return request.get('http://localhost:'+port+'/submit?' + qs.stringify({
-    file: file
+    data: JSON.stringify(data)
   }))
 }
