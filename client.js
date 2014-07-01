@@ -1,14 +1,18 @@
 var update = require('gl-shader-update')
 var sse    = require('sse-stream')
 var events = require('./')
-var port   = parseInt(process.env.GLSLIFY_LIVE_PORT || 12874)
+var _port   = parseInt(process.env.GLSLIFY_LIVE_PORT || 12874)
 
-var watcher = sse('http://localhost:'+port+'/changes')
+var watchers = {}
 
-watcher.setMaxListeners(10000)
-
-module.exports = function(id, createShader, shaderInfo) {
+module.exports = function(id, createShader, shaderInfo, port) {
   shaderInfo = JSON.stringify(shaderInfo)
+
+  var watcher = watchers[
+    port = port || _port
+  ] = watchers[port] || sse('http://localhost:'+port+'/changes')
+
+  watcher.setMaxListeners(10000)
 
   return function(gl) {
     var shader = createShader(gl)
