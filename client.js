@@ -5,9 +5,7 @@ var _port   = parseInt(process.env.GLSLIFY_LIVE_PORT || 12874)
 
 var watchers = {}
 
-module.exports = function(id, createShader, shaderInfo, port) {
-  shaderInfo = JSON.stringify(shaderInfo)
-
+module.exports = function(id, createShader, port) {
   var watcher = watchers[
     port = port || _port
   ] = watchers[port] || sse('http://localhost:'+port+'/changes')
