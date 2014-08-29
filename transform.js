@@ -19,7 +19,7 @@ function transform(file, opts) {
   return through(function write(data) {
     buffer.push(data)
   }, function flush() {
-    buffer = buffer.join('\n')
+    buffer = buffer.join('')
 
     if (buffer.indexOf('glslify') === -1) {
       this.queue(buffer)
