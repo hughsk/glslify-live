@@ -1,6 +1,6 @@
 {
   "name": "glslify-live",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "description": "A browserify transform that transparently enables live reloading of your shaders when using glslify.",
   "main": "transform.js",
   "browser": "browser.js",
