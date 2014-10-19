@@ -135,7 +135,9 @@ function createServer() {
     var message = [err.message, err.stack].join('\n')
 
     res.statusCode = 500
-    res.setHeader('content-type', 'text/plain')
+    if (!res.headersSent) {
+      res.setHeader('content-type', 'text/plain')
+    }
     res.end(message)
     console.error(message)
   }
