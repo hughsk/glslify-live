@@ -12,10 +12,16 @@ After installing `glslify-live`, run this from your project root to start up
 the live reloading server:
 
 ``` bash
-npm start glslify-live
+node_modules/.bin/glslify-live
 ```
 
-Provided that's running, you can simply include the `glslify-live` transform
+If you're running it from a `package.json` script, you can just do:
+
+``` bash
+glslify-live
+```
+
+Once that's running, you can simply include the `glslify-live` transform
 *before* `glslify` when you're bundling with browserify. In the commandline:
 
 ``` bash

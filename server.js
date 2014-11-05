@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 var bundle   = require('glslify-bundle')
 var qs       = require('querystring')
 var sse      = require('sse-stream')

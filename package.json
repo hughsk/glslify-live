@@ -4,6 +4,9 @@
   "description": "A browserify transform that transparently enables live reloading of your shaders when using glslify.",
   "main": "transform.js",
   "browser": "browser.js",
+  "bin": {
+    "glslify-live": "server.js"
+  },
   "scripts": {
     "test": "cd test && beefy index.js --open -- -t ../ -t glslify",
     "start": "node server.js"
