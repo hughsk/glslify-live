@@ -29,7 +29,7 @@
     "once": "^1.3.0",
     "replace-method": "0.0.0",
     "request": "^2.36.0",
-    "sleuth": "^0.1.0",
+    "sleuth": "^0.1.1",
     "sse-stream": "0.0.4",
     "static-eval": "^0.2.3",
     "through": "^2.3.4",
@@ -38,8 +38,10 @@
   "devDependencies": {
     "a-big-triangle": "0.0.0",
     "beefy": "^1.1.0",
+    "browserify": "^12.0.1",
     "gl-context": "^0.1.0",
-    "glslify": "^1.3.0"
+    "gl-shader": "^4.1.0",
+    "glslify": "^2.3.0"
   },
   "directories": {
     "test": "test"
