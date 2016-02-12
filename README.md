@@ -48,7 +48,7 @@ br.bundle().pipe(output)
 You might want to respond to these automatic updates, especially considering
 that they may result in changing the values of your uniform/attribute variables.
 
-In that case, you can simply require this module in your code and list to
+In that case, you can simply require this module in your code and listen to
 the update event:
 
 ``` javascript
