@@ -8,7 +8,7 @@ var watchers = {}
 module.exports = function(id, createShader, port) {
   var watcher = watchers[
     port = port || _port
-  ] = watchers[port] || sse('http://localhost:'+port+'/changes')
+  ] = watchers[port] || sse('http://' + location.hostname + ':'+port+'/changes')
 
   watcher.setMaxListeners(10000)
 
